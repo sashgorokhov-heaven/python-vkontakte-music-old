@@ -1,9 +1,9 @@
 import tools
 
 
-def music_list(client, name_only, url_only, **kwargs):
+def music_list(client, print_part, **kwargs):
     for item in tools.list_items(client, 'audio.get'):
-        tools.print_audio(item, name_only, url_only)
+        tools.print_audio(item, print_part)
 
 
 def music_download_interactive(client, **kwargs):

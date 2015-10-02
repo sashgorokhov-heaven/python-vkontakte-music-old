@@ -72,25 +72,36 @@ def make_audio_name(artist, title, valid_name=True, sep='-'):
     return artist + ' %s ' % sep + title
 
 
-def format_audio(audio_item, name_only=False, url_only=False):
+def format_audio(audio_item, print_part=None):
     """
     Print audio item.
 
     :param dict audio_item: dict describing one audio
-    :param bool only_url: print only audio url. Default False.
-    :param bool valid_name: print with valid audio name as filename. Default True.
+    :param str print_part: id, name, or url. Which part of audio to print. Default is None (print all).
     """
-    line = ''
-    if not url_only:
-        line += make_audio_name(audio_item['artist'], audio_item['title'])
-    if not name_only:
-        line += ('  ' if not url_only else '') + audio_item['url']
-    return line
+    all = {'id', 'name', 'url'}
+    if print_part is not None:
+        print_part = set(print_part.split('+'))
+    else:
+        print_part = all
+
+    name = make_audio_name(audio_item['artist'], audio_item['title'])
+    url = audio_item['url']
+    id = str(audio_item['id'])
+    args = list()
+
+    if 'id' in print_part:
+        args.append(id)
+    if 'name' in print_part:
+        args.append(name)
+    if 'url' in print_part:
+        args.append(url)
+    return '  '.join(args)
 
 
-def print_audio(audio_item, name_only=False, url_only=False):
+def print_audio(audio_item, print_part):
     """Just format and print an audio"""
-    print(format_audio(audio_item, name_only, url_only))
+    print(format_audio(audio_item, print_part))
 
 
 def ask(message):

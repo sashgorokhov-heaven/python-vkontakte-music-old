@@ -23,8 +23,7 @@ def _get_arguments():
 
     music_list_parser = music_subparsers.add_parser('list')
     group = music_list_parser.add_mutually_exclusive_group()
-    group.add_argument('--url_only', action='store_true', help='Show audio urls only.')
-    group.add_argument('--name_only', action='store_true', help='Show audio names only.')
+    group.add_argument('--print_part', choices=['id', 'name', 'url', 'id+url', 'id+name', 'name+url'], help='Which audio part to show.')
 
     music_download_interactive_parser = music_subparsers.add_parser('download_interactive')
 
