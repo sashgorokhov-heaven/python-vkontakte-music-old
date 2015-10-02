@@ -22,10 +22,11 @@ def _get_arguments():
     music_subparsers = music_parser.add_subparsers(title='Available actions', dest='action_command')
 
     music_list_parser = music_subparsers.add_parser('list')
-    group = music_list_parser.add_mutually_exclusive_group()
-    group.add_argument('--print_part', choices=['id', 'name', 'url', 'id+url', 'id+name', 'name+url'], help='Which audio part to show.')
+    music_list_parser.add_argument('--print_part', choices=['id', 'name', 'url', 'id+url', 'id+name', 'name+url'], help='Which audio part to show.')
 
     music_download_interactive_parser = music_subparsers.add_parser('download_interactive')
+    music_album_list_parser = music_subparsers.add_parser('list_album')
+    music_album_list_parser.add_argument('--print_part', choices=['id', 'name', 'id+name'], help='Which album part to show.')
 
     args = vars(parser.parse_args())
     nocreds_message = 'Specify ether login and password, or credentials file only.'

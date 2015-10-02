@@ -72,36 +72,70 @@ def make_audio_name(artist, title, valid_name=True, sep='-'):
     return artist + ' %s ' % sep + title
 
 
-def format_audio(audio_item, print_part=None):
+def print_part_format(d, config, print_part):
     """
-    Print audio item.
-
-    :param dict audio_item: dict describing one audio
-    :param str print_part: id, name, or url. Which part of audio to print. Default is None (print all).
+    :param dict d: item dict.
+    :param list config: print config.
+    :param str print_part: which part from config to add to formatted string.
+    :return str: formatted string.
     """
-    all = {'id', 'name', 'url'}
+    config_dict = dict()
+    keys_list = list()
+    for config_item in config:
+        key = list(config_item)[0]
+        config_dict[key] = config_item[key]
+        keys_list.append(key)
     if print_part is not None:
         print_part = set(print_part.split('+'))
     else:
-        print_part = all
-
-    name = make_audio_name(audio_item['artist'], audio_item['title'])
-    url = audio_item['url']
-    id = str(audio_item['id'])
-    args = list()
-
-    if 'id' in print_part:
-        args.append(id)
-    if 'name' in print_part:
-        args.append(name)
-    if 'url' in print_part:
-        args.append(url)
-    return '  '.join(args)
+        print_part = set(config_dict)
+    format = list()
+    for key in keys_list:
+        if key in print_part:
+            if 'getter' in config_dict[key]:
+                value = config_dict[key]['getter'](d)
+            else:
+                value = d[config_dict[key].get('key', key)]
+            value = config_dict[key].get('format', str)(value)
+            format.append(value)
+    return '  '.join(format)
 
 
-def print_audio(audio_item, print_part):
+def format_audio(audio, print_part=None):
+    """
+    Format audio.
+
+    :param dict audio: dict describing one audio.
+    :param str print_part: id, name, or url. Which part of audio to print. Default is None (print all).
+    """
+    return print_part_format(audio, [
+        {'id': {}},
+        {'name': {'getter': lambda d: make_audio_name(d['artist'], d['title'])}},
+        {'url': {}}
+    ], print_part)
+
+
+def print_audio(audio, print_part):
     """Just format and print an audio"""
-    print(format_audio(audio_item, print_part))
+    print(format_audio(audio, print_part))
+
+
+def format_album(album, print_part):
+    """
+    Format album.
+
+    :param dict album: dict describing one album.
+    :param str print_part: id, or name. Which part of album to print. Default is None (print all).
+    """
+    return print_part_format(album, [
+        {'id': {}},
+        {'name': {'getter': lambda d: filter_text(d['title'])}}
+    ], print_part)
+
+
+def print_album(album, print_part):
+    """Just format and print an album"""
+    print(format_album(album, print_part))
 
 
 def ask(message):
