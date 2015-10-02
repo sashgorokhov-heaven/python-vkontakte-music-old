@@ -9,4 +9,4 @@ def music_list(client, name_only, url_only, **kwargs):
 def music_download_interactive(client, **kwargs):
     for audio in tools.list_items(client, 'audio.get'):
         if tools.ask('Download '+ tools.format_audio(audio, name_only=True)):
-            tools.download(audio)
+            tools.download_audio(audio)

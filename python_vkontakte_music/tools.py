@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import requests
 import vkontakte
 import string
 import urllib
@@ -135,6 +136,17 @@ class Downloader:
         print()
 
 
-def download(audio):
+def download_raw(url, filename, reporthook=None, chunk_size=1024,):
+    r = requests.get(url, stream=True)
+    with open(filename, 'wb') as f:
+        for n, chunk in enumerate(r.iter_content(chunk_size=chunk_size)):
+            if chunk:
+                f.write(chunk)
+                f.flush()
+            if reporthook:
+                reporthook(n, chunk_size, int(r.headers.get('content-length', 1)))
+
+
+def download_audio(audio):
     filename = make_audio_name(audio['artist'], audio['title']) + '.mp3'
     Downloader(filename, audio['url'], with_reporthook=True).start()
