@@ -88,10 +88,12 @@ def format_audio(audio_item, name_only=False, url_only=False):
 
 
 def print_audio(audio_item, name_only=False, url_only=False):
+    """Just format and print an audio"""
     print(format_audio(audio_item, name_only, url_only))
 
 
 def ask(message):
+    """Ask user a question"""
     if not message.endswith('?'):
         message += ' ?'
     message += ' Y/N: '
@@ -106,13 +108,15 @@ def ask(message):
 
 
 def list_items(client, method, **kwargs):
+    """Get a full list of items"""
     return client.call(method, **kwargs)['items']
 
 
 class Downloader:
-    def __init__(self, filename, url):
+    def __init__(self, filename, url, with_reporthook=False):
         self.filename = filename
         self.url = url
+        self.with_reporthook = with_reporthook
 
     def format_filename(self):
         if len(self.filename) > 50:
@@ -124,10 +128,13 @@ class Downloader:
         print('Downloading {}: {}%'.format(self.format_filename(), p), end='\r')
 
     def start(self):
-        urllib.urlretrieve(self.url, self.filename, reporthook=self._reporthook)
+        if self.with_reporthook:
+            urllib.urlretrieve(self.url, self.filename, reporthook=self._reporthook)
+        else:
+            urllib.urlretrieve(self.url, self.filename)
         print()
 
 
 def download(audio):
     filename = make_audio_name(audio['artist'], audio['title']) + '.mp3'
-    Downloader(filename, audio['url']).start()
+    Downloader(filename, audio['url'], with_reporthook=True).start()
