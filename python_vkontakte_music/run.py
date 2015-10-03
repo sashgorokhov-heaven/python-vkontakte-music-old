@@ -23,8 +23,13 @@ def _get_arguments():
 
     music_list_parser = music_subparsers.add_parser('list')
     music_list_parser.add_argument('--print_part', choices=['id', 'name', 'url', 'id+url', 'id+name', 'name+url'], help='Which audio part to show.')
+    music_list_parser.add_argument('--album_id', type=int, help='List audios in album.')
+    music_list_parser.add_argument('--limit', type=int, help='Show only first N audios.')
 
     music_download_interactive_parser = music_subparsers.add_parser('download_interactive')
+    music_download_interactive_parser.add_argument('--album_id', type=int, help='Download audios in album.')
+    music_download_interactive_parser.add_argument('--limit', type=int, help='Download only first N audios.')
+
     music_album_list_parser = music_subparsers.add_parser('list_album')
     music_album_list_parser.add_argument('--print_part', choices=['id', 'name', 'id+name'], help='Which album part to show.')
 
