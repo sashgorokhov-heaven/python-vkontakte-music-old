@@ -153,9 +153,25 @@ def ask(message):
             print('Invalid character.')
 
 
-def list_items(client, method, **kwargs):
+def list_items(client, method, limit=None,  **kwargs):
     """Get a full list of items"""
-    return client.call(method, **kwargs)['items']
+    kwargs['count'] = 100
+    first = client.call(method, **kwargs)
+    total = first['count']
+    offset = len(first['items'])
+    n = 0
+    items = first['items']
+    while offset <= total:
+        for item in items:
+            if limit and n == limit:
+                raise StopIteration()
+            yield item
+            n += 1
+        if offset == total:
+            raise StopIteration()
+        kwargs['offset'] = offset
+        items = client.call(method, **kwargs)['items']
+        offset += len(items)
 
 
 class Downloader:

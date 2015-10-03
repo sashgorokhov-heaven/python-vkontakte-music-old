@@ -27,7 +27,7 @@ class VkontakteClient:
     def _compile_params(self, params_dict):
         params = list()
         for key in params_dict:
-            if len(str(params_dict[key])) != 0:
+            if params_dict[key]:
                 if isinstance(params_dict[key], list):
                     params.append((key, ','.join(map(str, params_dict[key]))))
                 else:
