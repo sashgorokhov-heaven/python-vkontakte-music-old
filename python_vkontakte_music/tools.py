@@ -153,9 +153,11 @@ def ask(message):
             print('Invalid character.')
 
 
-def list_items(client, method, limit=None,  **kwargs):
+def list_items(client, method, limit=None, run_full=True,  **kwargs):
     """Get a full list of items"""
     kwargs['count'] = 100
+    if limit and limit < kwargs['count']:
+        kwargs['count'] = limit
     first = client.call(method, **kwargs)
     total = first['count']
     offset = len(first['items'])
@@ -167,6 +169,8 @@ def list_items(client, method, limit=None,  **kwargs):
                 raise StopIteration()
             yield item
             n += 1
+        if not run_full:
+            raise StopIteration()
         if offset == total:
             raise StopIteration()
         kwargs['offset'] = offset
@@ -175,8 +179,9 @@ def list_items(client, method, limit=None,  **kwargs):
 
 
 class Downloader:
-    def __init__(self, filename, url, with_reporthook=False):
+    def __init__(self, filename, url, destination=None, with_reporthook=False):
         self.filename = filename
+        self.destination = destination
         self.url = url
         self.with_reporthook = with_reporthook
 
@@ -190,10 +195,13 @@ class Downloader:
         print('Downloading {}: {}%'.format(self.format_filename(), p), end='\r')
 
     def start(self):
+        filename = self.filename
+        if self.destination:
+            filename = os.path.join(self.destination, filename)
         if self.with_reporthook:
-            urllib.urlretrieve(self.url, self.filename, reporthook=self._reporthook)
+            urllib.urlretrieve(self.url, filename, reporthook=self._reporthook)
         else:
-            urllib.urlretrieve(self.url, self.filename)
+            urllib.urlretrieve(self.url, filename)
         print()
 
 
@@ -208,6 +216,14 @@ def download_raw(url, filename, reporthook=None, chunk_size=1024,):
                 reporthook(n, chunk_size, int(r.headers.get('content-length', 1)))
 
 
-def download_audio(audio):
+def from_ids_file(id_file):
+    if not isinstance(id_file, file):
+        id_file = open(id_file, 'r')
+    for line in id_file:
+        line = line.strip()
+        if line:
+            yield int(line)
+
+def download_audio(audio, destination=None):
     filename = make_audio_name(audio['artist'], audio['title']) + '.mp3'
-    Downloader(filename, audio['url'], with_reporthook=True).start()
+    Downloader(filename, audio['url'], destination=destination, with_reporthook=True).start()
