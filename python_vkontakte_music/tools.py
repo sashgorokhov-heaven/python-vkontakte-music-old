@@ -1,10 +1,12 @@
 from __future__ import print_function
+import argparse
 
 import os
 import requests
-import vkontakte
 import string
 import urllib
+from urllib.request import urlretrieve
+import vkontakte
 
 
 ACCESS_TOKEN_FILENAME = '.access_token'
@@ -49,6 +51,96 @@ def get_access_token(login, password):
     return access_token
 
 
+class ActionBase(object):
+    subaction_required = True
+    action_name = None
+
+    def __init__(self, parser):
+        # apply arguments only if function was defined in class (do not use parents apply_arguments)
+        if 'apply_arguments' in self.__class__.__dict__:
+            self.apply_arguments(parser)
+        subactions = self.get_subactions()
+        if subactions:
+            subparsers = parser.add_subparsers(title='Available actions')
+            if self.subaction_required:
+                subparsers.dest = 'action'
+                subparsers.required = True
+            for action_class in subactions:
+                parser = subparsers.add_parser(action_class.action_name)
+                action = action_class(parser)
+                parser.set_defaults(action_instance=action)
+
+    @classmethod
+    def get_subactions(cls):
+        return cls.__subclasses__()
+
+    def apply_arguments(self, parser):
+        """
+        Add arguments to action's parser.
+
+        :param argparse.ArgumentParser parser: parser for this action.
+        """
+        group = parser.add_argument_group(title='Use credentials from file')
+        group.add_argument('-c', '--credentials', type=argparse.FileType('r'), help='Credentials file')
+
+        group = parser.add_argument_group(title='User credentials from options')
+        group.add_argument('-l', '--login', help='User login (email or phone number).')
+        group.add_argument('-p', '--pass', help='User password.')
+
+        parser.add_argument('-V', '--version', help='Which API version to use. Default is 5.37.', default='5.37')
+
+    def add_print_part_argument(self, parser, what, *choices):
+        additional = list()
+        choices = list(choices)
+        for n, item in enumerate(choices, 1):
+            for other in choices[n:]:
+                additional.append(item+'+'+other)
+        choices += additional
+        parser.add_argument('--print_part', choices=choices, help='Which %s part to show.' % what)
+
+    def add_limit_argument(self, parser, what, action):
+        parser.add_argument('--limit', type=int, help='%s only first N %s.' % (action.capitalize(), what))
+
+    def add_id_argument(self, parser, what, action):
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('--id_file', type=argparse.FileType('r'), help='File with list of %s ids to %s.' % (what, action))
+        group.add_argument('--id', type=int, nargs='+', help='List of %s ids to %s.' % (what, action))
+
+    def run(self, *args, **kwargs):
+        print(self.__class__.__name__, args, kwargs)
+
+    def list_items(self, method, limit=None, run_full=True,  **kwargs):
+        """Get a full list of items"""
+        kwargs['count'] = 100
+        if limit and limit < kwargs['count']:
+            kwargs['count'] = limit
+        first = self.client.call(method, **kwargs)
+        total = first['count']
+        offset = len(first['items'])
+        n = 0
+        items = first['items']
+        while offset <= total:
+            for item in items:
+                if limit and n == limit:
+                    raise StopIteration()
+                yield item
+                n += 1
+            if not run_full:
+                raise StopIteration()
+            if offset == total:
+                raise StopIteration()
+            kwargs['offset'] = offset
+            items = self.client.call(method, **kwargs)['items']
+            offset += len(items)
+
+    def process_id_argument(self, kwargs):
+        if kwargs.get('id_file', None):
+            kwargs['id'] = from_ids_file(kwargs.pop('id_file'))
+        id = kwargs.pop('id', None)
+        if id:
+            kwargs['audio_ids'] = ','.join(map(str, id))
+
+
 def filter_text(text):
     """Remove invalid symbols from string"""
     return ''.join(c if c in string.printable else '?' for c in text.strip())
@@ -72,7 +164,7 @@ def make_audio_name(artist, title, valid_name=True, sep='-'):
     return artist + ' %s ' % sep + title
 
 
-def print_part_format(d, config, print_part):
+def print_part_format(d, config, print_part=None):
     """
     :param dict d: item dict.
     :param list config: print config.
@@ -115,12 +207,12 @@ def format_audio(audio, print_part=None):
     ], print_part)
 
 
-def print_audio(audio, print_part):
+def print_audio(audio, print_part=None):
     """Just format and print an audio"""
     print(format_audio(audio, print_part))
 
 
-def format_album(album, print_part):
+def format_album(album, print_part=None):
     """
     Format album.
 
@@ -129,11 +221,11 @@ def format_album(album, print_part):
     """
     return print_part_format(album, [
         {'id': {}},
-        {'name': {'getter': lambda d: filter_text(d['title'])}}
+        {'title': {'format': filter_text}}
     ], print_part)
 
 
-def print_album(album, print_part):
+def print_album(album, print_part=None):
     """Just format and print an album"""
     print(format_album(album, print_part))
 
@@ -144,7 +236,7 @@ def ask(message):
         message += ' ?'
     message += ' Y/N: '
     while True:
-        inp = raw_input(message).lower()
+        inp = input(message).lower()
         if inp == 'y':
             return True
         elif inp == 'n' or inp == '':
@@ -153,35 +245,9 @@ def ask(message):
             print('Invalid character.')
 
 
-def list_items(client, method, limit=None, run_full=True,  **kwargs):
-    """Get a full list of items"""
-    kwargs['count'] = 100
-    if limit and limit < kwargs['count']:
-        kwargs['count'] = limit
-    first = client.call(method, **kwargs)
-    total = first['count']
-    offset = len(first['items'])
-    n = 0
-    items = first['items']
-    while offset <= total:
-        for item in items:
-            if limit and n == limit:
-                raise StopIteration()
-            yield item
-            n += 1
-        if not run_full:
-            raise StopIteration()
-        if offset == total:
-            raise StopIteration()
-        kwargs['offset'] = offset
-        items = client.call(method, **kwargs)['items']
-        offset += len(items)
-
-
 class Downloader:
-    def __init__(self, filename, url, destination=None, with_reporthook=False):
+    def __init__(self, filename, url, with_reporthook=False):
         self.filename = filename
-        self.destination = destination
         self.url = url
         self.with_reporthook = with_reporthook
 
@@ -195,13 +261,10 @@ class Downloader:
         print('Downloading {}: {}%'.format(self.format_filename(), p), end='\r')
 
     def start(self):
-        filename = self.filename
-        if self.destination:
-            filename = os.path.join(self.destination, filename)
         if self.with_reporthook:
-            urllib.urlretrieve(self.url, filename, reporthook=self._reporthook)
+            urlretrieve(self.url, self.filename, reporthook=self._reporthook)
         else:
-            urllib.urlretrieve(self.url, filename)
+            urlretrieve(self.url, self.filename)
         print()
 
 
@@ -217,13 +280,29 @@ def download_raw(url, filename, reporthook=None, chunk_size=1024,):
 
 
 def from_ids_file(id_file):
-    if not isinstance(id_file, file):
-        id_file = open(id_file, 'r')
     for line in id_file:
         line = line.strip()
         if line:
             yield int(line)
 
-def download_audio(audio, destination=None):
+
+def directory_type(path):
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            return path
+        else:
+            raise argparse.ArgumentTypeError('%s is not a directory' % path)
+    else:
+        raise argparse.ArgumentTypeError('%s not found' % path)
+
+
+def make_full_audio_filename(audio, destination=None):
     filename = make_audio_name(audio['artist'], audio['title']) + '.mp3'
-    Downloader(filename, audio['url'], destination=destination, with_reporthook=True).start()
+    if destination:
+        return os.path.join(destination, filename)
+    return filename
+
+
+def download_audio(audio, destination=None):
+    filename = make_full_audio_filename(audio, destination)
+    Downloader(filename, audio['url'], with_reporthook=True).start()

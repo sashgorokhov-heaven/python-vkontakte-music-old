@@ -1,10 +1,8 @@
-import os
-import urllib
 import requests
-import cookielib
-import urllib2
-from urlparse import urlparse
-from HTMLParser import HTMLParser
+from http import cookiejar as cookielib
+import urllib.request as urllib2
+from urllib.parse import urlparse, urlencode
+from html.parser import HTMLParser
 
 
 class VkontakteError(Exception):
@@ -44,7 +42,7 @@ class VkontakteClient:
 
     def call(self, method, **params_dict):
         params = self._compile_params(params_dict)
-        url = 'https://api.vk.com/method/{}?{}'.format(method, urllib.urlencode(params))
+        url = 'https://api.vk.com/method/{}?{}'.format(method, urlencode(params))
         response = requests.get(url).json()
         if 'error' in response:
             raise VkontakteError(response['error'])
@@ -100,7 +98,7 @@ def auth(email, password, client_id, scope):
             "redirect_uri=http://oauth.vk.com/blank.html&response_type=token&" + \
             "client_id=%s&scope=%s&display=wap" % (client_id, ",".join(scope))
             )
-        doc = response.read()
+        doc = response.read().decode()
         parser = _FormParser()
         parser.feed(doc)
         parser.close()
@@ -110,7 +108,7 @@ def auth(email, password, client_id, scope):
         parser.params["email"] = email
         parser.params["pass"] = password
         if parser.method == "POST":
-            response = opener.open(parser.url, urllib.urlencode(parser.params))
+            response = opener.open(parser.url, urlencode(parser.params).encode())
         else:
             raise NotImplementedError("Method '%s'" % parser.method)
         return response.read(), response.geturl()
@@ -123,7 +121,7 @@ def auth(email, password, client_id, scope):
         if not parser.form_parsed or parser.url is None:
               raise ValueError("Something wrong")
         if parser.method == "POST":
-            response = opener.open(parser.url, urllib.urlencode(parser.params))
+            response = opener.open(parser.url, urlencode(parser.params))
         else:
             raise NotImplementedError("Method '%s'" % parser.method)
         return response.geturl()
