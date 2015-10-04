@@ -10,7 +10,7 @@ class MusicList(Music):
     subaction_required = False
     action_name = 'list'
 
-    def run(self, print_part=None, *args, **kwargs):
+    def run(self, print_part=None, friend_id=None, group_id=None, *args, **kwargs):
         self.process_id_argument(kwargs)
         for audio in self.list_items('audio.get', **kwargs):
             tools.print_audio(audio, print_part)
@@ -19,7 +19,11 @@ class MusicList(Music):
         self.add_print_part_argument(parser, 'audio', 'id', 'name', 'url')
         self.add_limit_argument(parser, 'audios', 'show')
         self.add_id_argument(parser, 'audio', 'show')
-        parser.add_argument('--album_id', type=int, help='List audios in album.')
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('--album_id', type=int, help='List audios in album.')
+#        TODO
+#        group.add_argument('--friend_id', type=int, help="List friend's audios.")
+#        group.add_argument('--group_id', type=int, help="List group's audios.")
 
 
 class MusicListAlbum(MusicList):
@@ -72,7 +76,6 @@ class MusicSearch(Music):
         kwargs['q'] = kwargs.pop('query')
         for audio in self.client.call('audio.search', **kwargs)['items']:
             tools.print_audio(audio, print_part)
-
 
     def apply_arguments(self, parser):
         self.add_print_part_argument(parser, 'audio', 'id', 'name', 'url')
