@@ -22,7 +22,11 @@ def main():
     action_name = args.pop('action')
     action.client = vkontakte.VkontakteClient(args.pop('access_token'), args.pop('version'))
 
-    return action.run(**args)
+    try:
+        return action.run(**args)
+    except vkontakte.VkontakteError as e:
+        print('[Error]', '[Code:%s]' % e.error_code, '[Message: %s]' % e.error_msg)
+        exit(1)
 
 if __name__ == '__main__':
     main()

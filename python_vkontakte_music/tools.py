@@ -11,7 +11,7 @@ import vkontakte
 
 ACCESS_TOKEN_FILENAME = '.access_token'
 APPLICATION_ID = '5091851'
-SCOPE = ['audio']
+SCOPE = ['audio', 'groups', 'friends']
 
 
 class CredentialsError(Exception): pass
@@ -228,6 +228,42 @@ def format_album(album, print_part=None):
 def print_album(album, print_part=None):
     """Just format and print an album"""
     print(format_album(album, print_part))
+
+
+def format_group(group, print_part=None):
+    """
+    Format group.
+
+    :param dict group: dict describing one group.
+    :param print_part:  id or name. Which part of group to print. Default is None (print all).
+    """
+    return print_part_format(group, [
+        {'id': {}},
+        {'name': {'format': filter_text}}
+    ])
+
+
+def print_group(group, print_part=None):
+    """Just format and print group"""
+    print(format_group(group, print_part))
+
+
+def format_friend(friend, print_part=None):
+    """
+    Format group.
+
+    :param dict friend: dict describing one friend.
+    :param print_part:  id or name. Which part of friend to print. Default is None (print all).
+    """
+    return print_part_format(friend, [
+        {'id': {}},
+        {'name': {'getter': lambda d: filter_text(d['first_name']+ ' '+d['last_name'])}}
+    ])
+
+
+def print_friend(friend, print_part=None):
+    """Just format and print friend"""
+    print(format_friend(friend, print_part))
 
 
 def ask(message):

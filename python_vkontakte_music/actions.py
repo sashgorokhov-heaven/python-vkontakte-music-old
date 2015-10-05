@@ -12,6 +12,10 @@ class MusicList(Music):
 
     def run(self, print_part=None, friend_id=None, group_id=None, *args, **kwargs):
         self.process_id_argument(kwargs)
+        if friend_id:
+            kwargs['owner_id'] = friend_id
+        elif group_id:
+            kwargs['owner_id'] = -group_id
         for audio in self.list_items('audio.get', **kwargs):
             tools.print_audio(audio, print_part)
 
@@ -19,11 +23,10 @@ class MusicList(Music):
         self.add_print_part_argument(parser, 'audio', 'id', 'name', 'url')
         self.add_limit_argument(parser, 'audios', 'show')
         self.add_id_argument(parser, 'audio', 'show')
+        parser.add_argument('--album_id', type=int, help='List audios in album.')
         group = parser.add_mutually_exclusive_group()
-        group.add_argument('--album_id', type=int, help='List audios in album.')
-#        TODO
-#        group.add_argument('--friend_id', type=int, help="List friend's audios.")
-#        group.add_argument('--group_id', type=int, help="List group's audios.")
+        group.add_argument('--friend_id', type=int, help="Friend id. List friend's audios.")
+        group.add_argument('--group_id', type=int, help="Group id. List group's audios.")
 
 
 class MusicListAlbum(MusicList):
@@ -82,3 +85,63 @@ class MusicSearch(Music):
         self.add_limit_argument(parser, 'audios', 'show')
         parser.add_argument('--search_own', action='store_true', help='Search in own audios.')
         parser.add_argument('query', type=str, help='Search query.')
+
+
+class Group(tools.ActionBase):
+    action_name = 'group'
+
+
+class GroupList(Group):
+    subaction_required = False
+    action_name = 'list'
+
+    def run(self, print_part=None, *args, **kwargs):
+        for group in self.list_items('groups.get', extended=1, **kwargs):
+            tools.print_group(group, print_part)
+
+    def apply_arguments(self, parser):
+        self.add_limit_argument(parser, 'groups', 'show')
+        self.add_print_part_argument(parser, 'group', 'id', 'name')
+
+
+class GroupListAlbum(GroupList):
+    action_name = 'album'
+
+    def run(self, group_id, print_part=None,  *args, **kwargs):
+        for album in self.list_items('audio.getAlbums', owner_id=-group_id, **kwargs):
+            tools.print_album(album, print_part)
+
+    def apply_arguments(self, parser):
+        parser.add_argument('group_id', type=int, help='Group id.')
+        self.add_print_part_argument(parser, 'album', 'id', 'title')
+        self.add_limit_argument(parser, 'albums', 'show')
+
+
+class Friend(tools.ActionBase):
+    action_name = 'friend'
+
+
+class FriendList(Friend):
+    subaction_required = False
+    action_name = 'list'
+
+    def run(self, print_part=None, *args, **kwargs):
+        for friend in self.list_items('friends.get', fields='screen_name', **kwargs):
+            tools.print_friend(friend, print_part)
+
+    def apply_arguments(self, parser):
+        self.add_limit_argument(parser, 'friends', 'show')
+        self.add_print_part_argument(parser, 'friend', 'id', 'name')
+
+
+class FriendListAlbum(FriendList):
+    action_name = 'album'
+
+    def run(self, friend_id, print_part=None,  *args, **kwargs):
+        for album in self.list_items('audio.getAlbums', owner_id=friend_id, **kwargs):
+            tools.print_album(album, print_part)
+
+    def apply_arguments(self, parser):
+        parser.add_argument('friend_id', type=int, help='Friend id.')
+        self.add_print_part_argument(parser, 'album', 'id', 'title')
+        self.add_limit_argument(parser, 'albums', 'show')

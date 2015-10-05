@@ -111,7 +111,7 @@ def auth(email, password, client_id, scope):
             response = opener.open(parser.url, urlencode(parser.params).encode())
         else:
             raise NotImplementedError("Method '%s'" % parser.method)
-        return response.read(), response.geturl()
+        return response.read().decode(), response.geturl()
 
     # Permission request form
     def give_access(doc, opener):
@@ -121,7 +121,7 @@ def auth(email, password, client_id, scope):
         if not parser.form_parsed or parser.url is None:
               raise ValueError("Something wrong")
         if parser.method == "POST":
-            response = opener.open(parser.url, urlencode(parser.params))
+            response = opener.open(parser.url, urlencode(parser.params).encode())
         else:
             raise NotImplementedError("Method '%s'" % parser.method)
         return response.geturl()
