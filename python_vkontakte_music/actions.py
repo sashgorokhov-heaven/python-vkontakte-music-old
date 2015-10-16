@@ -55,7 +55,7 @@ class MusicDownload(Music):
                 tools.download_audio(audio, destination)
             except Exception as e:
                 if skip_error:
-                    print('Error:', e)
+                    print('While: {} Error: {}'.format(tools.format_audio(audio, 'id+name'), e))
                     continue
                 else:
                     raise

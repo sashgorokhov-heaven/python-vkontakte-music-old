@@ -12,6 +12,8 @@ import vkontakte
 ACCESS_TOKEN_FILENAME = '.access_token'
 APPLICATION_ID = '5091851'
 SCOPE = ['audio', 'groups', 'friends']
+REPLACE_CHAR = '#'
+VALID_CHARS = set(string.printable) - set('\*:"<>|/')
 
 
 class CredentialsError(Exception): pass
@@ -143,7 +145,7 @@ class ActionBase(object):
 
 def filter_text(text):
     """Remove invalid symbols from string"""
-    return ''.join(c if c in string.printable else '?' for c in text.strip())
+    return ''.join(c if c in VALID_CHARS else REPLACE_CHAR for c in text.strip())
 
 
 def filter_audio_name(artist, title):
