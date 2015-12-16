@@ -1,10 +1,10 @@
+# encoding: utf-8
 from __future__ import print_function
 import argparse
 
 import os
 import requests
 import string
-import urllib
 from urllib.request import urlretrieve
 import vkontakte
 
@@ -14,6 +14,7 @@ APPLICATION_ID = '5091851'
 SCOPE = ['audio', 'groups', 'friends']
 REPLACE_CHAR = '#'
 VALID_CHARS = set(string.printable) - set('\*:"<>|/')
+VALID_CHARS = VALID_CHARS.union(set((chr(i) for i in range(ord('А'), ord('я')+1))))
 
 
 class CredentialsError(Exception): pass
@@ -41,7 +42,7 @@ def save_access_token_file(access_token):
 def retrieve_access_token(login, password):
     try:
         return vkontakte.auth(login, password, APPLICATION_ID, SCOPE)[0]
-    except:
+    except ValueError:
         raise CredentialsError('Invalid login or password.')
 
 
