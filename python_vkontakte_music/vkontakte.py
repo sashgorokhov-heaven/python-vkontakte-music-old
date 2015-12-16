@@ -97,21 +97,22 @@ def auth(email, password, client_id, scope):
             "http://oauth.vk.com/oauth/authorize?" + \
             "redirect_uri=http://oauth.vk.com/blank.html&response_type=token&" + \
             "client_id=%s&scope=%s&display=wap" % (client_id, ",".join(scope))
-            )
+        )
         doc = response.read().decode()
         parser = _FormParser()
         parser.feed(doc)
         parser.close()
         if not parser.form_parsed or parser.url is None or "pass" not in parser.params or \
-          "email" not in parser.params:
-              raise ValueError("Something wrong")
+                        "email" not in parser.params:
+            raise ValueError("Something wrong")
         parser.params["email"] = email
         parser.params["pass"] = password
         if parser.method == "POST":
             response = opener.open(parser.url, urlencode(parser.params).encode())
         else:
             raise NotImplementedError("Method '%s'" % parser.method)
-        return response.read().decode(), response.geturl()
+        r = response.read()
+        return r.decode('windows-1251'), response.geturl()
 
     # Permission request form
     def give_access(doc, opener):
@@ -119,7 +120,7 @@ def auth(email, password, client_id, scope):
         parser.feed(doc)
         parser.close()
         if not parser.form_parsed or parser.url is None:
-              raise ValueError("Something wrong")
+            raise ValueError("Something wrong")
         if parser.method == "POST":
             response = opener.open(parser.url, urlencode(parser.params).encode())
         else:
@@ -141,5 +142,3 @@ def auth(email, password, client_id, scope):
     if "access_token" not in answer or "user_id" not in answer:
         raise ValueError("Missing some values in answer")
     return answer["access_token"], answer["user_id"], answer["expires_in"]
-
-
